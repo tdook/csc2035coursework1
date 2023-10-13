@@ -1,5 +1,4 @@
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
@@ -135,15 +134,34 @@ public class Client {
 	/* TODO: send metadata (file size and file name to create) to the server 
 	 * outputFile: is the name of the file that the server will create
 	*/
-	public void sendMetaData(int portNumber, InetAddress IPAddress, File file, String outputFile) {
-		exitErr("sendMetaData is not implemented");
+	public void sendMetaData(int portNumber, InetAddress IPAddress, File file, String outputFile){
+		//exitErr("sendMetaData is not implemented");
+		Object DatagramSocket = null;
+		socket = new DatagramSocket();
+		//File file = new File("input.txt");
+		//file = "input.txt"
 
+		FileInputStream fileInputStream = new FileInputStream(file);
+
+
+		MetaData metaData = new MetaData();
+		//metaData.setName("input.txt");
+		//metaData.setSize();
+		//metaData.getName();
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		ObjectOutputStream os = new ObjectOutputStream(outputStream);
+		os.writeObject(metaData);
+		byte[] send = outputStream.toByteArray();
+		DatagramPacket sendMetaData = new DatagramPacket(send, send.length, IPAddress, portNumber );
+		socket.send(sendMetaData);
+		socket.close();
 	}
 
 
 	/* TODO: Send the file to the server without corruption*/
 	public void sendFileNormal(int portNumber, InetAddress IPAddress, File file) {
 		exitErr("sendFileNormal is not implemented");
+
 	} 
 
 	/* TODO: This function is essentially the same as the sendFileNormal function
