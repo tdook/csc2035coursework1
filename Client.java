@@ -134,34 +134,73 @@ public class Client {
 	/* TODO: send metadata (file size and file name to create) to the server 
 	 * outputFile: is the name of the file that the server will create
 	*/
-	public void sendMetaData(int portNumber, InetAddress IPAddress, File file, String outputFile) throws IOException {
+	public void sendMetaData(int portNumber, InetAddress IPAddress, File file, String outputFile) {
 		//exitErr("sendMetaData is not implemented");
+
 		Object DatagramSocket = null;
-		socket = new DatagramSocket();
+		try {
+			socket = new DatagramSocket();
+		} catch (SocketException e) {
+			socket.close();
+			throw new RuntimeException(e);
+		}
 		//File file = new File("input.txt");
 		//file = new file ("output.txt");
 
 
-		FileInputStream fileInputStream = new FileInputStream(file);
+		FileInputStream fileInputStream = null;
+		try {
+			fileInputStream = new FileInputStream(file);
+		} catch (FileNotFoundException e) {
+			socket.close();
+			throw new RuntimeException(e);
+		}
 		int bitRead;
 		int totalBits = 0;
-		while ((bitRead = fileInputStream.read()) != -1) {
+		while (true) {
+			try {
+				if (!((bitRead = fileInputStream.read()) != -1)) break;
+			} catch (IOException e) {
+				socket.close();
+				throw new RuntimeException(e);
+			}
 			totalBits++;
 		}
 		// READ IN file length using stream somehow
-		fileInputStream.close();
+		try {
+			fileInputStream.close();
+		} catch (IOException e) {
+			socket.close();
+			throw new RuntimeException(e);
+		}
 
 		MetaData metaData = new MetaData();
 		metaData.setName("output.txt");
 		metaData.setSize(totalBits);
-		System.out.println(metaData.getSize());
+	//	System.out.println(metaData.getSize());
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		ObjectOutputStream os = new ObjectOutputStream(outputStream);
-		os.writeObject(metaData);
+		ObjectOutputStream os = null;
+		try {
+			os = new ObjectOutputStream(outputStream);
+		} catch (IOException e) {
+			socket.close();
+			throw new RuntimeException(e);
+		}
+		try {
+			os.writeObject(metaData);
+		} catch (IOException e) {
+			socket.close();
+			throw new RuntimeException(e);
+		}
 		byte[] send = outputStream.toByteArray();
 		DatagramPacket sendMetaData = new DatagramPacket(send, send.length, IPAddress, portNumber );
-		socket.send(sendMetaData);
+		try {
+			socket.send(sendMetaData);
+			System.out.println("SENDER: meta data is sent (file name, size): ("+ metaData.getName()+", "+ metaData.getSize()+")");
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 		socket.close();
 	}
 
