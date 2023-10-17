@@ -165,7 +165,7 @@ public class Client {
 				throw new RuntimeException(e);
 			}
 			totalBits++;
-		}
+        }
 		// READ IN file length using stream somehow
 		try {
 			fileInputStream.close();
@@ -207,9 +207,14 @@ public class Client {
 
 	/* TODO: Send the file to the server without corruption*/
 	public void sendFileNormal(int portNumber, InetAddress IPAddress, File file) {
-		exitErr("sendFileNormal is not implemented");
+		//exitErr("sendFileNormal is not implemented");
+        try {
+            FileInputStream fileInputStream = new FileInputStream("input.txt");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
 
-	} 
+    }
 
 	/* TODO: This function is essentially the same as the sendFileNormal function
 	 *      except that it resends data segments if no ACK for a segment is 
