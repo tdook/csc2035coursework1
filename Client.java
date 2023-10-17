@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class Client {
@@ -208,14 +209,34 @@ public class Client {
 	/* TODO: Send the file to the server without corruption*/
 	public void sendFileNormal(int portNumber, InetAddress IPAddress, File file) {
 		//exitErr("sendFileNormal is not implemented");
-        try {
-            FileInputStream fileInputStream = new FileInputStream("input.txt");
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+		try (FileInputStream fileInputStream = new FileInputStream(file)) {
+			byte[] buffer = new byte[4]; //reads 4 bytes at one time
+			int bytesRead = fileInputStream.read(buffer);
+			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+			if (bytesRead == 4) {
+				 String text = new String(buffer, StandardCharsets.UTF_8);
+				System.out.println(text);
+				Segment dataSeg = new Segment();
+				objectOutputStream.writeObject(dataSeg);
+			}
+			byte[] byteArray = byteArrayOutputStream.toByteArray();
+			ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
+			ObjectInputStream objectInput = new ObjectInputStream(byteArrayInputStream);
+			Segment loadedSegment = (Segment) objectInput.readObject();
+			System.out.println(loadedSegment);
+			loadedSegment.setChecksum(4);
+		}catch(IOException e){
+				throw new RuntimeException(e);
+			} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 
-    }
 
+		//	checksum()
+
+
+	}
 	/* TODO: This function is essentially the same as the sendFileNormal function
 	 *      except that it resends data segments if no ACK for a segment is 
 	 *      received from the server.*/
