@@ -213,24 +213,32 @@ public class Client {
 			byte[] buffer = new byte[4]; //reads 4 bytes at one time
 			int bytesRead = fileInputStream.read(buffer);
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-			if (bytesRead == 4) {
-				 String text = new String(buffer, StandardCharsets.UTF_8);
-				System.out.println(text);
-				Segment dataSeg = new Segment();
-				objectOutputStream.writeObject(dataSeg);
-			}
+
+			byteArrayOutputStream.write(buffer,0,buffer.length);
 			byte[] byteArray = byteArrayOutputStream.toByteArray();
-			ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
-			ObjectInputStream objectInput = new ObjectInputStream(byteArrayInputStream);
-			Segment loadedSegment = (Segment) objectInput.readObject();
-			System.out.println(loadedSegment);
-			loadedSegment.setChecksum(4);
+			if (bytesRead == 4) {
+
+
+
+
+
+				String text = new String(buffer, StandardCharsets.UTF_8);
+				Segment seg0 = new Segment();
+				seg0.setPayLoad(text);
+				seg0.setSq(0);
+
+
+
+				seg0.setChecksum(1);
+				System.out.println(seg0.getChecksum());
+
+			}
+
+			//System.out.println(loadedSegment);
+			//loadedSegment.setChecksum(4);
 		}catch(IOException e){
 				throw new RuntimeException(e);
-			} catch (ClassNotFoundException e) {
-			throw new RuntimeException(e);
-		}
+			}
 
 
 		//	checksum()
