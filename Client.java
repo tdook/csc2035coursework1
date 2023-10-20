@@ -202,7 +202,7 @@ public class Client {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		socket.close();
+		//socket.close();
 	}
 
 
@@ -212,10 +212,11 @@ public class Client {
 		try (FileInputStream fileInputStream = new FileInputStream(file)) {
 			byte[] buffer = new byte[4]; //reads 4 bytes at one time
 			int bytesRead = fileInputStream.read(buffer);
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-			byteArrayOutputStream.write(buffer,0,buffer.length);
-			byte[] byteArray = byteArrayOutputStream.toByteArray();
+
+
+		//	byteArrayOutputStream.write(buffer,0,buffer.length);
+
 			if (bytesRead == 4) {
 
 
@@ -226,11 +227,25 @@ public class Client {
 				Segment seg0 = new Segment();
 				seg0.setPayLoad(text);
 				seg0.setSq(0);
-
-
-
+				seg0.setSize(buffer.length);
+				seg0.setType(SegmentType.Data);
 				seg0.setChecksum(1);
+
+				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+				ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+				objectOutputStream.writeObject(seg0);
+				byte[] byteArray = byteArrayOutputStream.toByteArray();
+
+				DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber);
+				socket.send(sentPacket);
+				socket.close();
+
+
 				System.out.println(seg0.getChecksum());
+				System.out.println(seg0);
+				System.out.println(seg0.getPayLoad());
+				System.out.println(seg0.getSq());
+				System.out.println(seg0.getSize());
 
 			}
 
