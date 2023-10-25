@@ -136,8 +136,6 @@ public class Client {
 	 * outputFile: is the name of the file that the server will create
 	 */
 	public void sendMetaData(int portNumber, InetAddress IPAddress, File file, String outputFile) {
-		//exitErr("sendMetaData is not implemented");
-
 		Object DatagramSocket = null;
 		try {
 			socket = new DatagramSocket();
@@ -145,10 +143,6 @@ public class Client {
 			socket.close();
 			throw new RuntimeException(e);
 		}
-		//File file = new File("input.txt");
-		//file = new file ("output.txt");
-
-
 		FileInputStream fileInputStream = null;
 		try {
 			fileInputStream = new FileInputStream(file);
@@ -178,9 +172,7 @@ public class Client {
 		MetaData metaData = new MetaData();
 		metaData.setName("output.txt");
 		metaData.setSize(totalBits);
-		//	System.out.println(metaData.getSize());
-
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	 	ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ObjectOutputStream os = null;
 		try {
 			os = new ObjectOutputStream(outputStream);
@@ -202,35 +194,22 @@ public class Client {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		//socket.close();
+
 	}
 
 
 	/* TODO: Send the file to the server without corruption*/
-	public void sendFileNormal(int portNumber, InetAddress IPAddress, File file) {
-		//exitErr("sendFileNormal is not implemented");
-		try (FileInputStream fileInputStream = new FileInputStream(file)) {
+	public void sendFileNormal(int portNumber, InetAddress IPAddress, File file) throws IOException {
+		    FileInputStream fileInputStream = new FileInputStream(file);
 			byte[] buffer = new byte[4]; //reads 4 bytes at one time
-			int bytesRead; // = fileInputStream.read(buffer);
+			int bytesRead;
 			int sequenceCount=0;
+			int totalSegs=0;
 
-
-
-
-			//	byteArrayOutputStream.write(buffer,0,buffer.length);
-
+		System.out.println("SENDER: Start Sending File\n\n----------------------------------------");
 			while((bytesRead = fileInputStream.read(buffer)) != -1) {
-				//buffer
-				// int asciiOfA = (int) buffer;
-				// byte[] buffer = "Java".getBytes(StandardCharsets.US_ASCII);
-				//System.out.println(buffer);
 
-				System.out.println("Bytes read"+ bytesRead);
-
-
-				//byte myByte = buffer[0]; // Replace 'A' with the byte you want to convert
-				// int asciiValue = (int) myByte;
-				//  System.out.println("ASCII Value: " + asciiValue);
+			//	System.out.println("Bytes read"+ bytesRead);
 
 				int asciiSum = 0;
 
@@ -239,11 +218,11 @@ public class Client {
 					asciiSum += asciiValue;
 
 				}
-				System.out.println("ASCII SUM LOOP"+asciiSum);
+				//System.out.println("ASCII SUM LOOP"+asciiSum);
 
 				String text = new String(buffer, StandardCharsets.UTF_8);
-				byte[] bytes = text.getBytes("US-ASCII");
-				System.out.println("Byte ascii sum"+ bytes);
+			//	byte[] bytes = text.getBytes("US-ASCII");
+				//System.out.println("Byte ascii sum"+ bytes);
 				Segment seg0 = new Segment();
 				seg0.setPayLoad(text);
 
@@ -254,8 +233,9 @@ public class Client {
 					seg0.setSq(1);
 				}
 				sequenceCount++;
+				totalSegs++;
 
-				seg0.setSize(buffer.length);
+				seg0.setSize(bytesRead);
 				seg0.setType(SegmentType.Data);
 				seg0.setChecksum(asciiSum);
 
@@ -266,30 +246,20 @@ public class Client {
 
 				DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber);
 				socket.send(sentPacket);
-				buffer = new byte[4];
+				System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
+						", checksum:"+ seg0.getChecksum()+", content:("+seg0.getPayLoad()+")\n");
+				System.out.println("SENDER: Waiting for an ack\n");
+				System.out.println("ACK "+ seg0.getSq()+" RECEIVED.\n----------------------------------------\n");
 
+				buffer = new byte[bytesRead];
 
-
-
-
-				System.out.println(seg0.getChecksum());
-				System.out.println(seg0);
-				System.out.println(seg0.getPayLoad());
-				System.out.println(seg0.getSq());
-				System.out.println(seg0.getSize());
 
 
 			}
+			System.out.println("Total segments sent: "+totalSegs+"\n");
 			socket.close();
 
-			//System.out.println(loadedSegment);
-			//loadedSegment.setChecksum(4);
-		}catch(IOException e){
-			throw new RuntimeException(e);
-		}
 
-
-		//	checksum()
 
 
 	}
