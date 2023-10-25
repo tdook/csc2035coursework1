@@ -1,0 +1,2 @@
+cd C:\Users\Toby\Documents\Uni\Year 2\CSC2035\Coursework1
+Java Client 127.0.0.1 20330 input.txt output.txt nm
