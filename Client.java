@@ -207,29 +207,30 @@ public class Client {
 
 
 	/* TODO: Send the file to the server without corruption*/
-	public void sendFileNormal(int portNumber, InetAddress IPAddress, File file) {
+	public void sendFileNormal(int portNumber, InetAddress IPAddress, File file) throws IOException {
 		//exitErr("sendFileNormal is not implemented");
-		try (FileInputStream fileInputStream = new FileInputStream(file)) {
-			byte[] buffer = new byte[4]; //reads 4 bytes at one time
-			int bytesRead = fileInputStream.read(buffer);
+		    FileInputStream fileInputStream = new FileInputStream(file);
+			byte[] buffer = new byte[1024]; //reads 4 bytes at one time
+            int bytesRead = 0;
+            for 
+            bytesRead = fileInputStream.read(buffer);
 
+            if (bytesRead == 4) {
+                //System.out.println("Bytes read"+ bytesRead);
+                int asciiSum = 0;
+                for (byte myByte : buffer) {
+                    int asciiValue = myByte; // Convert byte array to ASCII value
+                    asciiSum += asciiValue;
+                }
+               // System.out.println("ASCII SUM LOOP"+asciiSum);
 
-
-		//	byteArrayOutputStream.write(buffer,0,buffer.length);
-
-			if (bytesRead == 4) {
-
-
-
-
-
-				String text = new String(buffer, StandardCharsets.UTF_8);
+				String text = new String(buffer, StandardCharsets.UTF_8); //converting byte array to string to load payload
 				Segment seg0 = new Segment();
 				seg0.setPayLoad(text);
 				seg0.setSq(0);
 				seg0.setSize(buffer.length);
 				seg0.setType(SegmentType.Data);
-				seg0.setChecksum(1);
+				seg0.setChecksum(asciiSum);
 
 				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 				ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
@@ -241,25 +242,19 @@ public class Client {
 				socket.close();
 
 
-				System.out.println(seg0.getChecksum());
-				System.out.println(seg0);
-				System.out.println(seg0.getPayLoad());
-				System.out.println(seg0.getSq());
-				System.out.println(seg0.getSize());
+			//	System.out.println(seg0.getChecksum());
+			//	System.out.println(seg0);
+			//	System.out.println(seg0.getPayLoad());
+			//	System.out.println(seg0.getSq());
+			//	System.out.println(seg0.getSize());
 
 			}
 
-			//System.out.println(loadedSegment);
-			//loadedSegment.setChecksum(4);
-		}catch(IOException e){
-				throw new RuntimeException(e);
-			}
+    }
 
 
-		//	checksum()
 
 
-	}
 	/* TODO: This function is essentially the same as the sendFileNormal function
 	 *      except that it resends data segments if no ACK for a segment is 
 	 *      received from the server.*/
