@@ -250,11 +250,24 @@ public class Client {
 				socket.send(sentPacket);
 				System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
 						", checksum:"+ seg0.getChecksum()+", content:("+seg0.getPayLoad()+")\n");
-				System.out.println("SENDER: Waiting for an ack\n");
-				System.out.println("ACK "+ seg0.getSq()+" RECEIVED.\n----------------------------------------\n");
+
 
 				buffer = new byte[bytesRead];
-
+				Segment ackSeg = new Segment();
+				byte[] ackReceive = new byte[65535];
+				DatagramPacket ackReceivePacket = new DatagramPacket(ackReceive,ackReceive.length);
+				socket.receive(ackReceivePacket);
+				byte[] ackData = ackReceivePacket.getData();
+				ByteArrayInputStream ackIn = new ByteArrayInputStream(ackData);
+				ObjectInputStream ackIs =  new ObjectInputStream(ackIn);
+				try {
+					ackSeg = (Segment) ackIs.readObject();
+			//		System.out.println("Seg"+ ackSeg.getType() + ackSeg.getPayLoad() + ackSeg.getSq());
+				} catch (ClassNotFoundException e) {
+					throw new RuntimeException(e);
+				}
+				System.out.println("SENDER: Waiting for an ack\n");
+				System.out.println("ACK "+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
 
 
 			}
