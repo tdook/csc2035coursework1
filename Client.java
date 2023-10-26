@@ -244,6 +244,8 @@ public class Client {
 				objectOutputStream.writeObject(seg0);
 				byte[] byteArray = byteArrayOutputStream.toByteArray();
 
+				//use receive metadata to construct code to receive the network ack and use segtype.ack to check it's receiving it
+
 				DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber);
 				socket.send(sentPacket);
 				System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
