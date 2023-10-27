@@ -244,14 +244,14 @@ public class Client {
 				objectOutputStream.writeObject(seg0);
 				byte[] byteArray = byteArrayOutputStream.toByteArray();
 
-				//use receive metadata to construct code to receive the network ack and use segtype.ack to check it's receiving it
+
 
 				DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber);
 				socket.send(sentPacket);
 				System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
 						", checksum:"+ seg0.getChecksum()+", content:("+seg0.getPayLoad()+")\n");
 
-
+				//ack receive code
 				buffer = new byte[bytesRead];
 				Segment ackSeg = new Segment();
 				byte[] ackReceive = new byte[65535];
@@ -267,7 +267,7 @@ public class Client {
 					throw new RuntimeException(e);
 				}
 				System.out.println("SENDER: Waiting for an ack\n");
-				System.out.println("ACK "+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
+				System.out.println("ACK sq="+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
 
 
 			}
