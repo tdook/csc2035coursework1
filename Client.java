@@ -281,8 +281,90 @@ public class Client {
 	/* TODO: This function is essentially the same as the sendFileNormal function
 	 *      except that it resends data segments if no ACK for a segment is
 	 *      received from the server.*/
-	public void sendFileWithTimeOut(int portNumber, InetAddress IPAddress, File file, float loss) {
-		exitErr("sendFileWithTimeOut is not implemented");
+	public void sendFileWithTimeOut(int portNumber, InetAddress IPAddress, File file, float loss) throws IOException {
+
+		//exitErr("sendFileWithTimeOut is not implemented");
+		FileInputStream fileInputStream = new FileInputStream(file);
+		byte[] buffer = new byte[4]; //reads 4 bytes at one time
+		int bytesRead;
+		int sequenceCount=0;
+		int totalSegs=0;
+		loss = 1;
+		boolean byteCorrupt= isCorrupted(loss);
+
+		System.out.println("SENDER: Start Sending File\n\n----------------------------------------");
+		while((bytesRead = fileInputStream.read(buffer)) != -1) {
+
+			//	System.out.println("Bytes read"+ bytesRead);
+
+			int asciiSum = 0;
+
+			for (byte myByte : buffer) {
+				int asciiValue = myByte; // Convert to ASCII value
+				asciiSum += asciiValue;
+
+			}
+			//System.out.println("ASCII SUM LOOP"+asciiSum);
+
+			String text = new String(buffer, StandardCharsets.UTF_8);
+			//	byte[] bytes = text.getBytes("US-ASCII");
+			//System.out.println("Byte ascii sum"+ bytes);
+			Segment seg0 = new Segment();
+			seg0.setPayLoad(text);
+
+			if (sequenceCount % 2 == 0) {
+				seg0.setSq(0);
+			}
+			else{
+				seg0.setSq(1);
+			}
+			sequenceCount++;
+			totalSegs++;
+
+			seg0.setSize(bytesRead);
+			seg0.setType(SegmentType.Data);
+			seg0.setChecksum(asciiSum);
+			checksum(text,byteCorrupt);
+
+
+			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+			objectOutputStream.writeObject(seg0);
+			byte[] byteArray = byteArrayOutputStream.toByteArray();
+
+
+
+			DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber);
+			socket.send(sentPacket);
+			System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
+					", checksum:"+ seg0.getChecksum()+", content:("+seg0.getPayLoad()+")\n");
+
+			//ack receive code
+			buffer = new byte[bytesRead];
+			Segment ackSeg = new Segment();
+			byte[] ackReceive = new byte[65535];
+			DatagramPacket ackReceivePacket = new DatagramPacket(ackReceive,ackReceive.length);
+			socket.receive(ackReceivePacket);
+			byte[] ackData = ackReceivePacket.getData();
+			ByteArrayInputStream ackIn = new ByteArrayInputStream(ackData);
+			ObjectInputStream ackIs =  new ObjectInputStream(ackIn);
+			try {
+				ackSeg = (Segment) ackIs.readObject();
+				//		System.out.println("Seg"+ ackSeg.getType() + ackSeg.getPayLoad() + ackSeg.getSq());
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+			System.out.println("SENDER: Waiting for an ack\n");
+			System.out.println("ACK sq="+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
+
+
+		}
+		System.out.println("Total segments sent: "+totalSegs+"\n");
+		socket.close();
+
+
+
+
 	}
 
 
