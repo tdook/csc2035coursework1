@@ -289,7 +289,7 @@ public class Client {
 		int bytesRead;
 		int sequenceCount=0;
 		int totalSegs=0;
-		loss = 1;
+		loss = 0.98F;
 		boolean byteCorrupt= isCorrupted(loss);
 
 		System.out.println("SENDER: Start Sending File\n\n----------------------------------------");
@@ -324,7 +324,8 @@ public class Client {
 			seg0.setSize(bytesRead);
 			seg0.setType(SegmentType.Data);
 			seg0.setChecksum(asciiSum);
-			checksum(text,byteCorrupt);
+			int byteCheck = checksum(text, byteCorrupt);
+			System.out.println("byte corrupt"+byteCheck);
 
 
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
