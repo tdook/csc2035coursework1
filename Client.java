@@ -321,65 +321,65 @@ public class Client {
 				boolean checkSumCorrupted= isCorrupted(loss);
 				int byteCheck = checksum(text, checkSumCorrupted);
 
-			if (checkSumCorrupted == true) {
+				if (checkSumCorrupted == true) {
 
-				seg0.setChecksum(0); // Set the checksum to 0 if it's corrupted
-				System.out.println("Corrupted Segment");
-				retry++;
+					seg0.setChecksum(0); // Set the checksum to 0 if it's corrupted
+					System.out.println("Corrupted Segment");
+					retry++;
 
-				break;
+					break;
 
 
-			} else {
-				seg0.setChecksum(byteCheck); // Set the checksum to byteCheck if it's not corrupted
-			}
-			seg0.setChecksum(byteCheck);
+				} else {
+					seg0.setChecksum(byteCheck); // Set the checksum to byteCheck if it's not corrupted
+				}
+				seg0.setChecksum(byteCheck);
 
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-			objectOutputStream.writeObject(seg0);
-			byte[] byteArray = byteArrayOutputStream.toByteArray();
+				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+				ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+				objectOutputStream.writeObject(seg0);
+				byte[] byteArray = byteArrayOutputStream.toByteArray();
 
-			System.out.println("PACKET SEND");
-			DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber);
-			socket.send(sentPacket);
-			System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
-					", checksum:"+ seg0.getChecksum()+", content:("+seg0.getPayLoad()+")\n");
+				System.out.println("PACKET SEND");
+				DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber);
+				socket.send(sentPacket);
+				System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
+						", checksum:"+ seg0.getChecksum()+", content:("+seg0.getPayLoad()+")\n");
 
-			//ack receive code
-			try {
-				System.out.println("ACK RECEIVE");
-				//buffer = new byte[bytesRead];
-				Segment ackSeg = new Segment();
-				byte[] ackReceive = new byte[65535];
-				DatagramPacket ackReceivePacket = new DatagramPacket(ackReceive,ackReceive.length);
-				socket.receive(ackReceivePacket);
-				System.out.println("SOCKET ACK RECEIVE");
-				byte[] ackData = ackReceivePacket.getData();
-				ByteArrayInputStream ackIn = new ByteArrayInputStream(ackData);
-				ObjectInputStream ackIs =  new ObjectInputStream(ackIn);
+				//ack receive code
 				try {
-					ackSeg = (Segment) ackIs.readObject();
+					System.out.println("ACK RECEIVE");
+					//buffer = new byte[bytesRead];
+					Segment ackSeg = new Segment();
+					byte[] ackReceive = new byte[65535];
+					DatagramPacket ackReceivePacket = new DatagramPacket(ackReceive,ackReceive.length);
+					socket.receive(ackReceivePacket);
+					System.out.println("SOCKET ACK RECEIVE");
+					byte[] ackData = ackReceivePacket.getData();
+					ByteArrayInputStream ackIn = new ByteArrayInputStream(ackData);
+					ObjectInputStream ackIs =  new ObjectInputStream(ackIn);
+					try {
+						ackSeg = (Segment) ackIs.readObject();
 
-				} catch (ClassNotFoundException e) {
-					throw new RuntimeException(e);
+					} catch (ClassNotFoundException e) {
+						throw new RuntimeException(e);
+					}
+					System.out.println("SENDER: Waiting for an ack\n");
+					System.out.println("ACK sq="+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
+				} catch (SocketTimeoutException e) {
+					retry++;
+					if (retry>maxRetriesPerSeg){
+						System.out.println("Max retries exceeded");
+						return;
+					}
+					System.out.println("Attempt # "+retry);
 				}
-				System.out.println("SENDER: Waiting for an ack\n");
-				System.out.println("ACK sq="+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
-			} catch (SocketTimeoutException e) {
-				retry++;
-				if (retry>maxRetriesPerSeg){
-					System.out.println("Max retries exceeded");
-					return;
-				}
-				System.out.println("Attempt # "+retry);
-			}
 
 
-			//retryLoop = false;
+				//retryLoop = false;
 
-		//File input stream close maybe
-		}}
+				//File input stream close maybe
+			}}
 		System.out.println("Total segments sent: "+totalSegs+"\n");
 		socket.close();
 
@@ -387,6 +387,4 @@ public class Client {
 
 
 	}
-
-
 }
