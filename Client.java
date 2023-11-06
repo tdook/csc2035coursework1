@@ -324,10 +324,10 @@ public class Client {
 				if (checkSumCorrupted == true) {
 
 					seg0.setChecksum(0); // Set the checksum to 0 if it's corrupted
-					System.out.println("Corrupted Segment");
-					retry++;
+					System.out.println("Corrupted Segment, retrying transmission\n"+"Retry attempt = "+ retry+"\n");
+					//retry++;
 
-					break;
+					//break;
 
 
 				} else {
@@ -370,9 +370,11 @@ public class Client {
 					retry++;
 					if (retry>maxRetriesPerSeg){
 						System.out.println("Max retries exceeded");
+						retryLoop = false;
 						return;
 					}
 					System.out.println("Attempt # "+retry);
+					retryLoop = false;
 				}
 
 
