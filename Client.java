@@ -265,13 +265,15 @@ public class Client {
 		while((bytesRead = fileInputStream.read(buffer)) != -1) {
 
 			totalSegs++;
-			int retry = 0;
+			int retry = 1;
 
 			Segment seg0 = new Segment();
 
 			String text = new String(buffer, StandardCharsets.UTF_8).replaceAll("\0", "");
 			boolean retryLoop = true;
 			while (retryLoop){
+
+				System.out.println("Attempt #"+retry);
 
 				seg0.setType(SegmentType.Data);
 				seg0.setSize(bytesRead);
@@ -317,19 +319,18 @@ public class Client {
 
 					System.out.println("ACK sq="+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
 					buffer = new byte[4];
+					retryLoop = false;
 					sequenceCount++;
 
 				} catch (SocketTimeoutException e) {
 					retry++;
-					if (retry == RETRY_LIMIT){
+					if (retry > RETRY_LIMIT){
 						System.out.println("Max retries exceeded");
 						retryLoop = false;
 						socket.close();
 						fileInputStream.close();
-						exitErr("Max retries exceeded. Exitting Program.");
+						exitErr("Max retries exceeded. Exiting Program.");
 					}
-					System.out.println("Attempt #"+retry);
-					retryLoop = false;
 				}
 			}}
 		System.out.println("Total segments sent: "+totalSegs+"\n");
