@@ -136,72 +136,41 @@ public class Client {
 	/* TODO: send metadata (file size and file name to create) to the server
 	 * outputFile: is the name of the file that the server will create
 	 */
-	public void sendMetaData(int portNumber, InetAddress IPAddress, File file, String outputFile) {
-		Object DatagramSocket = null;
+	public void sendMetaData(int portNumber, InetAddress IPAddress, File file, String outputFile) throws IOException {
 		try {
 			socket = new DatagramSocket();
 		} catch (SocketException e) {
 			socket.close();
 			throw new RuntimeException(e);
 		}
-		FileInputStream fileInputStream = null;
-		try {
-			fileInputStream = new FileInputStream(file);
-		} catch (FileNotFoundException e) {
-			socket.close();
-			throw new RuntimeException(e);
-		}
-		int bitRead;
-		int totalBits = 0;
-		while (true) {
-			try {
-				if (!((bitRead = fileInputStream.read()) != -1)) break;
-			} catch (IOException e) {
-				socket.close();
-				throw new RuntimeException(e);
-			}
-			totalBits++;
-		}
-		// READ IN file length using stream somehow
-		try {
-			fileInputStream.close();
-		} catch (IOException e) {
-			socket.close();
-			throw new RuntimeException(e);
-		}
+
 
 		MetaData metaData = new MetaData();
-		metaData.setName("output.txt");
-		metaData.setSize(totalBits);
-	 	ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		metaData.setName(outputFile);
+		metaData.setSize((int)file.length());
+
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ObjectOutputStream os = null;
-		try {
-			os = new ObjectOutputStream(outputStream);
-		} catch (IOException e) {
-			socket.close();
-			throw new RuntimeException(e);
-		}
-		try {
-			os.writeObject(metaData);
-		} catch (IOException e) {
-			socket.close();
-			throw new RuntimeException(e);
-		}
+		os = new ObjectOutputStream(outputStream);
+		os.writeObject(metaData);
 		byte[] send = outputStream.toByteArray();
 		DatagramPacket sendMetaData = new DatagramPacket(send, send.length, IPAddress, portNumber );
-		try {
-			socket.send(sendMetaData);
-			System.out.println("SENDER: meta data is sent (file name, size): ("+ metaData.getName()+", "+ metaData.getSize()+")");
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-
+		socket.send(sendMetaData);
+		System.out.println("SENDER: meta data is sent (file name, size): ("+ metaData.getName()+", "+ metaData.getSize()+")");
+		socket.close();
 	}
 
 
 	/* TODO: Send the file to the server without corruption*/
 	public void sendFileNormal(int portNumber, InetAddress IPAddress, File file) throws IOException {
-		    FileInputStream fileInputStream = new FileInputStream(file);
+		try {
+			socket = new DatagramSocket();
+		} catch (SocketException e) {
+			socket.close();
+			throw new RuntimeException(e);
+		}
+
+		FileInputStream fileInputStream = new FileInputStream(file);
 			byte[] buffer = new byte[4]; //reads 4 bytes at one time
 			int bytesRead;
 			int sequenceCount=0;
@@ -288,7 +257,7 @@ public class Client {
 		int bytesRead;
 		int sequenceCount=0;
 		int totalSegs=0;
-		int maxRetriesPerSeg = 3;
+		//int maxRetriesPerSeg = 3; RETRY LIMIT
 
 
 		System.out.println("SENDER: Start Sending File\n\n----------------------------------------");
@@ -368,7 +337,7 @@ public class Client {
 					System.out.println("ACK sq="+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
 				} catch (SocketTimeoutException e) {
 					retry++;
-					if (retry>maxRetriesPerSeg){
+					if (retry>RETRY_LIMIT){
 						System.out.println("Max retries exceeded");
 						retryLoop = false;
 						return;
