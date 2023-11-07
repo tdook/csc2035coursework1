@@ -72,7 +72,7 @@ public class Client {
 	 * Only specify one transfer mode. That is, either nm or wt
 	 */
 
-	public static void main(String[] args) throws IOException, InterruptedException {
+	public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
 		if (args.length < 5) {
 			System.err.println("Usage: java Client <host name> <port number> <input file name> <output file name> <nm|wt>");
 			System.err.println("host name: is server IP address (e.g. 127.0.0.1) ");
@@ -242,58 +242,42 @@ public class Client {
 	/* TODO: This function is essentially the same as the sendFileNormal function
 	 *      except that it resends data segments if no ACK for a segment is
 	 *      received from the server.*/
-	public void sendFileWithTimeOut(int portNumber, InetAddress IPAddress, File file, float loss) throws IOException {
+	public void sendFileWithTimeOut(int portNumber, InetAddress IPAddress, File file, float loss) throws IOException, ClassNotFoundException {
+
+		// Opening Socket
+
+		try {
+			socket = new DatagramSocket();
+			socket.setSoTimeout(1000);
+		} catch (SocketException e) {
+			socket.close();
+			throw new RuntimeException(e);
+		}
+
 		FileInputStream fileInputStream = new FileInputStream(file);
 		byte[] buffer = new byte[4]; //reads 4 bytes at one time
 		int bytesRead;
 		int sequenceCount=0;
 		int totalSegs=0;
-		//int maxRetriesPerSeg = 3; RETRY LIMIT
 
 
 		System.out.println("SENDER: Start Sending File\n\n----------------------------------------");
 		while((bytesRead = fileInputStream.read(buffer)) != -1) {
+
 			totalSegs++;
-			int asciiSum = 0;
 			int retry = 0;
-			socket.setSoTimeout(1000);
 
 			Segment seg0 = new Segment();
 
-			/*for (byte myByte : buffer) {
-				int asciiValue = myByte; // Convert to ASCII value
-				asciiSum += asciiValue;
-
-			}*/
-			String text = new String(buffer, StandardCharsets.UTF_8);
+			String text = new String(buffer, StandardCharsets.UTF_8).replaceAll("\0", "");
 			boolean retryLoop = true;
 			while (retryLoop){
+
 				seg0.setType(SegmentType.Data);
 				seg0.setSize(bytesRead);
-				if (sequenceCount % 2 == 0) {
-					seg0.setSq(0);
-				}
-				else{
-					seg0.setSq(1);
-				}
-				sequenceCount++;
+				seg0.setSq(sequenceCount % 2);
 				seg0.setPayLoad(text);
-				boolean checkSumCorrupted= isCorrupted(loss);
-				int byteCheck = checksum(text, checkSumCorrupted);
-
-				if (checkSumCorrupted == true) {
-
-					seg0.setChecksum(0); // Set the checksum to 0 if it's corrupted
-					System.out.println("Corrupted Segment, retrying transmission\n"+"Retry attempt = "+ retry+"\n");
-					//retry++;
-
-					//break;
-
-
-				} else {
-					seg0.setChecksum(byteCheck); // Set the checksum to byteCheck if it's not corrupted
-				}
-				seg0.setChecksum(byteCheck);
+				seg0.setChecksum(checksum(text, isCorrupted(loss)));
 
 				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 				ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
@@ -306,11 +290,12 @@ public class Client {
 				System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
 						", checksum:"+ seg0.getChecksum()+", content:("+seg0.getPayLoad()+")\n");
 
-				//ack receive code
+				// Ack Receive Code
+				Segment ackSeg = new Segment();
+				System.out.println("SENDER: Waiting for an ack\n");
 				try {
 					System.out.println("ACK RECEIVE");
-					//buffer = new byte[bytesRead];
-					Segment ackSeg = new Segment();
+
 					byte[] ackReceive = new byte[65535];
 					DatagramPacket ackReceivePacket = new DatagramPacket(ackReceive,ackReceive.length);
 					socket.receive(ackReceivePacket);
@@ -318,35 +303,38 @@ public class Client {
 					byte[] ackData = ackReceivePacket.getData();
 					ByteArrayInputStream ackIn = new ByteArrayInputStream(ackData);
 					ObjectInputStream ackIs =  new ObjectInputStream(ackIn);
-					try {
+
+					try{
+
 						ackSeg = (Segment) ackIs.readObject();
 
-					} catch (ClassNotFoundException e) {
-						throw new RuntimeException(e);
+					} catch (ClassNotFoundException e){
+						fileInputStream.close();
+						socket.close();
+						e.printStackTrace();
+
 					}
-					System.out.println("SENDER: Waiting for an ack\n");
+
 					System.out.println("ACK sq="+ ackSeg.getSq()+" RECEIVED.\n----------------------------------------\n");
+					buffer = new byte[4];
+					sequenceCount++;
+
 				} catch (SocketTimeoutException e) {
 					retry++;
-					if (retry>RETRY_LIMIT){
+					if (retry == RETRY_LIMIT){
 						System.out.println("Max retries exceeded");
 						retryLoop = false;
-						return;
+						socket.close();
+						fileInputStream.close();
+						exitErr("Max retries exceeded. Exitting Program.");
 					}
-					System.out.println("Attempt # "+retry);
+					System.out.println("Attempt #"+retry);
 					retryLoop = false;
 				}
-
-
-				//retryLoop = false;
-
-				//File input stream close maybe
 			}}
 		System.out.println("Total segments sent: "+totalSegs+"\n");
+		fileInputStream.close();
 		socket.close();
-
-
-
 
 	}
 }
