@@ -146,7 +146,7 @@ public class Client {
 
 
 		MetaData metaData = new MetaData();
-		metaData.setName(outputFile);
+		metaData.setName(outputFile); //setting metadata information
 		metaData.setSize((int)file.length());
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -182,7 +182,7 @@ public class Client {
 		System.out.println("SENDER: Start Sending File\n\n----------------------------------------");
 		while((bytesRead = fileInputStream.read(buffer)) != -1) {
 
-			int asciiSum = 0;
+
 
 			String text = (new String(buffer, StandardCharsets.UTF_8)).replaceAll("\0", "");
 			buffer = new byte[4];
@@ -191,7 +191,7 @@ public class Client {
 
 			seg0.setPayLoad(text);
 			seg0.setSq(sequenceCount % 2);
-			seg0.setSize(bytesRead);
+			seg0.setSize(bytesRead); 				//segment init
 			seg0.setType(SegmentType.Data);
 			seg0.setChecksum(checksum(text,false));
 
@@ -257,7 +257,7 @@ public class Client {
 		FileInputStream fileInputStream = new FileInputStream(file);
 		byte[] buffer = new byte[4]; //reads 4 bytes at one time
 		int bytesRead;
-		int sequenceCount=0;
+		int sequenceCount=0; //initialising vars
 		int totalSegs=0;
 
 
@@ -269,39 +269,48 @@ public class Client {
 
 			Segment seg0 = new Segment();
 
-			String text = new String(buffer, StandardCharsets.UTF_8).replaceAll("\0", "");
+			String text = new String(buffer, StandardCharsets.UTF_8).replaceAll("\0", ""); //replacing blank characters with proper formatting
 			boolean retryLoop = true;
-			while (retryLoop){
+			while (retryLoop){ //retry loop while file isn't sent
 
-				System.out.println("Attempt #"+retry);
+
 
 				seg0.setType(SegmentType.Data);
 				seg0.setSize(bytesRead);
-				seg0.setSq(sequenceCount % 2);
+				seg0.setSq(sequenceCount % 2);		//setting segment information
 				seg0.setPayLoad(text);
 				seg0.setChecksum(checksum(text, isCorrupted(loss)));
 
 				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-				ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+				ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);	//sending the object to a bytearray
 				objectOutputStream.writeObject(seg0);
 				byte[] byteArray = byteArrayOutputStream.toByteArray();
 
-				System.out.println("PACKET SEND");
-				DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber);
+
+
+
+				DatagramPacket sentPacket = new DatagramPacket(byteArray, byteArray.length, IPAddress, portNumber); //sending the packet with the specified network info
 				socket.send(sentPacket);
 				System.out.println("SENDER: Sending segment:"+ seg0.getSq()+", size:"+ seg0.getSize()+
 						", checksum:"+ seg0.getChecksum()+", content:("+seg0.getPayLoad()+")\n");
 
+				if (seg0.getChecksum() == 0){ //logic checking for invalid checksum
+					System.out.println(">>>Network ERROR: segment checksum is corrupted<<\n");
+				}
+
 				// Ack Receive Code
 				Segment ackSeg = new Segment();
 				System.out.println("SENDER: Waiting for an ack\n");
+				if (seg0.getChecksum() == 0){
+					System.out.println("SENDER: TIMEOUT ALERT: Re-sending the same segment again, current retry: "+retry+"\n");
+				}
 				try {
-					System.out.println("ACK RECEIVE");
+					//System.out.println("ACK RECEIVE");
 
 					byte[] ackReceive = new byte[65535];
 					DatagramPacket ackReceivePacket = new DatagramPacket(ackReceive,ackReceive.length);
 					socket.receive(ackReceivePacket);
-					System.out.println("SOCKET ACK RECEIVE");
+				//	System.out.println("SOCKET ACK RECEIVE");
 					byte[] ackData = ackReceivePacket.getData();
 					ByteArrayInputStream ackIn = new ByteArrayInputStream(ackData);
 					ObjectInputStream ackIs =  new ObjectInputStream(ackIn);
@@ -324,7 +333,7 @@ public class Client {
 
 				} catch (SocketTimeoutException e) {
 					retry++;
-					if (retry > RETRY_LIMIT){
+					if (retry > RETRY_LIMIT){	//checking if retry limit exceeded
 						System.out.println("Max retries exceeded");
 						retryLoop = false;
 						socket.close();

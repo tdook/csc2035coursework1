@@ -242,7 +242,7 @@ public class Server {
 
 			int x = checksum(dataSeg.getPayLoad());
 
-			if (lastChecksum == x){
+			if (lastChecksum == x){ //checking if last checksum sent is identical for lost acks
 				System.out.println("ERROR: Duplicate Packet Received. Sending duplicate acknowledgement.");
 				socket.send(replyPacket);
 			} else{
